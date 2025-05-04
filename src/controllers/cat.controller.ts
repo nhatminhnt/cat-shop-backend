@@ -14,7 +14,7 @@ export const getCats = async (req: Request, res: Response) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // sorting
+    // sorting MongoDB
     const sortField = req.query.sortBy || "createdAt";
     const sortOrder = req.query.order === "asc" ? 1 : -1;
 
