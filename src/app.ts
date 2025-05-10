@@ -8,6 +8,7 @@ import catRoutes from './routes/cat.routes';
 import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
 import statsRoutes from './routes/stats.routes';
+import customerRoutes from './routes/customer.routes';
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/cats', catRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Error Handler
 app.use(notFound);
