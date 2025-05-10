@@ -4,79 +4,65 @@ import Cart from "../models/cart.model";
 import Cat from "../models/cat.model";
 import { sendEmail } from "../utils/sendEmail";
 import User from "../models/user.model";
+import { catchAsync } from "../utils/catchAsync";
 
-export const createOrder = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user.id;
-    const cart = await Cart.findOne({ user: userId }).populate("cartItems.cat");
+export const createOrder = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const cart = await Cart.findOne({ user: userId }).populate("cartItems.cat");
 
-    if (!cart || cart.cartItems.length === 0) {
-      return res.status(400).json({ message: "Giỏ hàng trống" });
-    }
-
-    const totalPrice = cart.cartItems.reduce((acc, item) => {
-      const price = (item.cat as any).price;
-      return acc + item.quantity * price;
-    }, 0);
-
-    const order = await Order.create({
-      user: userId,
-      orderItems: cart.cartItems.map((item) => ({
-        cat: item.cat,
-        quantity: item.quantity,
-      })),
-      totalPrice,
-    });
-
-    // Xóa giỏ hàng sau khi đặt hàng
-    await cart.deleteOne();
-
-    // Lấy thông tin người dùng để gửi email
-    const user = await User.findById(userId);
-
-    if (user?.email) {
-      await sendEmail(
-        user.email,
-        "🧾 Đơn hàng của bạn đã được xác nhận",
-        `
-          <h2>Cảm ơn bạn đã mua mèo tại MeoStore!</h2>
-          <p>Tổng tiền: <strong>${totalPrice.toLocaleString()} VND</strong></p>
-          <p>Chúng tôi sẽ xử lý đơn hàng của bạn trong thời gian sớm nhất.</p>
-        `
-      );
-    }
-
-    res.status(201).json(order);
-  } catch (error) {
-    console.error("Lỗi khi tạo đơn hàng:", error);
-    res.status(500).json({ message: "Lỗi máy chủ" });
+  if (!cart || cart.cartItems.length === 0) {
+    return res.status(400).json({ message: "Giỏ hàng trống" });
   }
-};
 
-export const getMyOrders = async (req: Request, res: Response) => {
-  try {
-    const orders = await Order.find({ user: req.user.id }).populate(
-      "orderItems.cat"
+  const totalPrice = cart.cartItems.reduce((acc, item) => {
+    const price = (item.cat as any).price;
+    return acc + item.quantity * price;
+  }, 0);
+
+  const order = await Order.create({
+    user: userId,
+    orderItems: cart.cartItems.map((item) => ({
+      cat: item.cat,
+      quantity: item.quantity,
+    })),
+    totalPrice,
+  });
+
+  // Xóa giỏ hàng sau khi đặt hàng
+  await cart.deleteOne();
+
+  // Lấy thông tin người dùng để gửi email
+  const user = await User.findById(userId);
+
+  if (user?.email) {
+    await sendEmail(
+      user.email,
+      "🧾 Đơn hàng của bạn đã được xác nhận",
+      `
+            <h2>Cảm ơn bạn đã mua mèo tại MeoStore!</h2>
+            <p>Tổng tiền: <strong>${totalPrice.toLocaleString()} VND</strong></p>
+            <p>Chúng tôi sẽ xử lý đơn hàng của bạn trong thời gian sớm nhất.</p>
+          `
     );
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ message: "Không thể lấy đơn hàng" });
   }
-};
 
-export const getAllOrders = async (req: Request, res: Response) => {
-  try {
-    const orders = await Order.find()
-      .populate("user")
-      .populate("orderItems.cat");
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ message: "Không thể lấy tất cả đơn hàng" });
-  }
-};
+  res.status(201).json(order);
+});
 
-export const updateOrderStatus = async (req: Request, res: Response) => {
-  try {
+export const getMyOrders = catchAsync(async (req: Request, res: Response) => {
+  const orders = await Order.find({ user: req.user.id }).populate(
+    "orderItems.cat"
+  );
+  res.json(orders);
+});
+
+export const getAllOrders = catchAsync(async (req: Request, res: Response) => {
+  const orders = await Order.find().populate("user").populate("orderItems.cat");
+  res.json(orders);
+});
+
+export const updateOrderStatus = catchAsync(
+  async (req: Request, res: Response) => {
     const { status } = req.body;
     const order = await Order.findById(req.params.id);
 
@@ -110,8 +96,5 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     }
 
     res.json(order);
-  } catch (error) {
-    console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
-    res.status(500).json({ message: "Cập nhật trạng thái thất bại" });
   }
-};
+);

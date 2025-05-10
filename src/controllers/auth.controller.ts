@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
+import { catchAsync } from "../utils/catchAsync";
 
 const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || "secret", {
@@ -9,7 +10,7 @@ const generateToken = (id: string) => {
   });
 };
 
-export const register = async (req: Request, res: Response) => {
+export const register = catchAsync(async (req: Request, res: Response) => {
   const { name, email, password, role } = req.body;
   const userExists = await User.findOne({ email });
 
@@ -32,9 +33,9 @@ export const register = async (req: Request, res: Response) => {
     role: user.role,
     token: generateToken(user._id),
   });
-};
+});
 
-export const login = async (req: Request, res: Response) => {
+export const login = catchAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
 
@@ -51,4 +52,4 @@ export const login = async (req: Request, res: Response) => {
       .status(401)
       .json({ message: "Mail hoặc password của bạn không hợp lệ" });
   }
-};
+});

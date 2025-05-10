@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import Cart from "../models/cart.model";
 import Cat from "../models/cat.model";
+import { catchAsync } from "../utils/catchAsync";
 
-export const addToCart = async (req: Request, res: Response) => {
+export const addToCart = catchAsync(async (req: Request, res: Response) => {
   const { catId, quantity } = req.body;
 
   const cat = await Cat.findById(catId);
@@ -37,9 +38,9 @@ export const addToCart = async (req: Request, res: Response) => {
 
     res.status(201).json(newCart);
   }
-};
+});
 
-export const getCart = async (req: Request, res: Response) => {
+export const getCart = catchAsync(async (req: Request, res: Response) => {
   const cart = await Cart.findOne({ user: req.user.id }).populate(
     "cartItems.cat"
   );
@@ -49,19 +50,21 @@ export const getCart = async (req: Request, res: Response) => {
   }
 
   res.json(cart);
-};
+});
 
-export const removeFromCart = async (req: Request, res: Response) => {
-  const { catId } = req.params;
-  const cart = await Cart.findOne({ user: req.user.id });
+export const removeFromCart = catchAsync(
+  async (req: Request, res: Response) => {
+    const { catId } = req.params;
+    const cart = await Cart.findOne({ user: req.user.id });
 
-  if (!cart) {
-    return res.status(404).json({ message: "Cart not found" });
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
+    }
+
+    cart.cartItems = cart.cartItems.filter(
+      (item) => item.cat.toString() !== catId
+    );
+    await cart.save();
+    res.json(cart);
   }
-
-  cart.cartItems = cart.cartItems.filter(
-    (item) => item.cat.toString() !== catId
-  );
-  await cart.save();
-  res.json(cart);
-};
+);
